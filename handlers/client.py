@@ -47,8 +47,17 @@ async def get_roles(message: types.Message, state=FSMContext):
     await message.reply(Answer.NOMINATIONS.value)
     await FSMGame.nomination.set()
     
-
-            
+async def get_nominations(message: types.Message, state=FSMContext):
+    nominations = [int(x) for x in message.text.split()]
+    async with state.proxy() as data:
+        if data.get('nominations'):
+            data['nominations'].append(nominations)
+        else: 
+            data['nominations'] = []
+            data['nominations'].append(nominations)
+        print(data['nominations'])
+    await message.reply(Answer.vote.value)
+    await FSMGame.vote.set()        
     
     
     
@@ -57,3 +66,5 @@ def register_handlers_client(dp : Dispatcher):
     dp.register_message_handler(new_game, commands=['new_game'], state=None)
     dp.register_message_handler(get_nick, state=FSMGame.nicks)
     dp.register_message_handler(get_roles,state=FSMGame.role_selection)
+    dp.register_message_handler(get_nominations,state=FSMGame.nomination)
+    dp.register_message_handler(get_nominations,state=FSMGame.vote)
