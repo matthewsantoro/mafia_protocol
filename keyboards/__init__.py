@@ -1,2 +1,2 @@
 from keyboards.client_kb import kb_client
-from keyboards.game_kb import kb_vote, kb_murder
+from keyboards.game_kb import kb_vote, kb_murder, kb_skip
