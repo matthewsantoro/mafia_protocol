@@ -1,6 +1,6 @@
 from aiogram.utils import executor
 from create_bot import dp 
-from handlers import client, admin
+from handlers import client, admin, game
 
     
 async def on_startup(_):
@@ -8,7 +8,7 @@ async def on_startup(_):
     
 
 client.register_handlers_client(dp)
-
+game.register_handlers_client(dp)
 
 
     
