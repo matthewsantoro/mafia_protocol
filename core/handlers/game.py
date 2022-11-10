@@ -2,23 +2,18 @@ from collections import namedtuple
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
+from core.states import FSMGame
 
 from answer_text import Answer, Emojis
-from keyboards import kb_extra_points, kb_murder, kb_skip, kb_vote
+from core.keyboards import kb_extra_points, kb_murder, kb_skip, kb_vote
+from typing import List
+
+import re
+from  core.handlers.check_game_valid_data import *
 
 
-class FSMGame(StatesGroup):
-    nicks = State()
-    roles = State()
-    nomination = State()
-    votes = State()
-    murder = State()
-    don_check = State()
-    sheriff_check = State()
-    check_role = State()
-    best_move = State()
-    extra_point = State()
+
+
     
 async def start_getting_extra_points(message: types.Message):
     await message.answer(Answer.EXTRA_POINT.value, reply_markup=kb_extra_points)
@@ -81,40 +76,53 @@ async def new_game(message: types.Message):
 
 async def get_nick(message: types.Message, state=FSMContext):
     nicks = message.text.split()
-    if len(nicks) == 10:
+    if check_valid_nick(nicks):
         async with state.proxy() as data:
             data['nicks'] = nicks
+            data['active_players'] = list(range(1,11))
         await FSMGame.roles.set()
         await message.answer(Answer.ROLE.value)
     else:
         await message.answer(Answer.NICK_ERROR.value)
 
 
+
 async def get_roles(message: types.Message, state=FSMContext):
     Roles = namedtuple('Roles', 'don maf_1 maf_2 sheriff')
-    try:
+    if check_valid_roles(message.text):    
         roles = Roles(*[int(x) for x in message.text.split()])
         async with state.proxy() as data:
             data["roles"] = roles
         await message.answer(Answer.NOMINATIONS.value, reply_markup=kb_skip)
         await FSMGame.nomination.set()
-    except:
+    else:
         await message.answer(Answer.COMMON_ERROR.value)
+    
 
 
 async def get_nominations(message: types.Message, state=FSMContext):
-    if message.text == kb_vote.keyboard[0][0].text:
-        nominations = 'Без голосования'
-    nominations = message.text
     async with state.proxy() as data:
         if not data.get('days'):
-            data['days'] = []
-        data['days'].append({'nomination': nominations})
-    await message.answer(Answer.VOTE.value, reply_markup=kb_skip)
-    await FSMGame.votes.set()
+                    data['days'] = []
+                    
+        if message.text == kb_vote.keyboard[0][0].text:
+            nominations = 'Без голосования'
+            await message.answer(Answer.VOTE.value, reply_markup=kb_skip)
+            await FSMGame.votes.set()
+            
+        elif check_valid_nominations(message.text , data['active_players']):     
+            nominations = str_to_digit_list_int(message.text)       
+            data['days'].append({'nomination': nominations})
+            await message.answer(Answer.VOTE.value, reply_markup=kb_skip)
+            await FSMGame.votes.set()
+            
+        else: await message.answer(Answer.COMMON_ERROR.value, reply_markup=kb_skip)
+    
 
 
-async def get_vote(message: types.Message, state=FSMContext):
+
+
+async def get_vote(message: types.Message, state=FSMContext):        
     if message.text == kb_skip.keyboard[0][0].text:
         vote = '-'
     else:

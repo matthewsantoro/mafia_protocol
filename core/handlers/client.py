@@ -1,7 +1,7 @@
 from aiogram import Dispatcher, types
 
 from answer_text import Answer
-from keyboards import kb_client
+from core.keyboards import kb_client
 
 
 async def command_start_help(message: types.Message):

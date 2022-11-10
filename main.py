@@ -1,6 +1,6 @@
 from aiogram.utils import executor
 from create_bot import dp 
-from handlers import client, admin, game
+from core.handlers import client, admin, game
 
     
 async def on_startup(_):
