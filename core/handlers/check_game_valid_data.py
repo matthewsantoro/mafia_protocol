@@ -7,8 +7,9 @@ def check_valid_roles(roles: str) -> bool:
 def check_valid_nick(nicks: List) -> bool:
     return len(nicks) == 10
 
-def check_valid_nominations(nomitations: str, active_players: List  )-> bool:
-    return _is_digit_str(nomitations) and _has_player_in_active_players(nomitations, active_players)
+def check_valid_nominations (nomitations: str, active_players: List  )-> bool:
+    return _is_digit_str(nomitations) and has_player_in_active_players(nomitations, active_players)
+
 
 
 def _is_digit_str(text: str) -> bool:
@@ -23,7 +24,7 @@ def _has_count_elements(text: str, count: int) -> bool:
 
 
 
-def _has_player_in_active_players( text_players: str, active_players: List) -> bool:
+def has_player_in_active_players( text_players: str, active_players: List) -> bool:
     return set(str_to_digit_list_int(text_players)).issubset(active_players)
 
 

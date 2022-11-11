@@ -9,12 +9,9 @@ from core.keyboards import kb_extra_points, kb_murder, kb_skip, kb_vote
 from typing import List
 
 import re
-from  core.handlers.check_game_valid_data import *
+from core.handlers.check_game_valid_data import *
 
 
-
-
-    
 async def start_getting_extra_points(message: types.Message):
     await message.answer(Answer.EXTRA_POINT.value, reply_markup=kb_extra_points)
     await FSMGame.extra_point.set()
@@ -69,6 +66,7 @@ async def get_result_game(message: types.Message, state=FSMContext):
             answer += f"{data['nicks'][int(key)-1]} : {data['extra_points'][key]}"
         await message.answer(answer)
 
+
 async def new_game(message: types.Message):
     await FSMGame.nicks.set()
     await message.answer(Answer.NICK.value)
@@ -79,17 +77,16 @@ async def get_nick(message: types.Message, state=FSMContext):
     if check_valid_nick(nicks):
         async with state.proxy() as data:
             data['nicks'] = nicks
-            data['active_players'] = list(range(1,11))
+            data['active_players'] = list(range(1, 11))
         await FSMGame.roles.set()
         await message.answer(Answer.ROLE.value)
     else:
         await message.answer(Answer.NICK_ERROR.value)
 
 
-
 async def get_roles(message: types.Message, state=FSMContext):
     Roles = namedtuple('Roles', 'don maf_1 maf_2 sheriff')
-    if check_valid_roles(message.text):    
+    if check_valid_roles(message.text):
         roles = Roles(*[int(x) for x in message.text.split()])
         async with state.proxy() as data:
             data["roles"] = roles
@@ -97,40 +94,42 @@ async def get_roles(message: types.Message, state=FSMContext):
         await FSMGame.nomination.set()
     else:
         await message.answer(Answer.COMMON_ERROR.value)
-    
 
 
 async def get_nominations(message: types.Message, state=FSMContext):
     async with state.proxy() as data:
         if not data.get('days'):
-                    data['days'] = []
-                    
+            data['days'] = []
+
         if message.text == kb_vote.keyboard[0][0].text:
             nominations = 'Без голосования'
             await message.answer(Answer.VOTE.value, reply_markup=kb_skip)
             await FSMGame.votes.set()
-            
-        elif check_valid_nominations(message.text , data['active_players']):     
-            nominations = str_to_digit_list_int(message.text)       
+
+        elif check_valid_nominations(message.text, data['active_players']):
+            nominations = str_to_digit_list_int(message.text)
             data['days'].append({'nomination': nominations})
             await message.answer(Answer.VOTE.value, reply_markup=kb_skip)
             await FSMGame.votes.set()
-            
-        else: await message.answer(Answer.COMMON_ERROR.value, reply_markup=kb_skip)
-    
+
+        else:
+            await message.answer(Answer.COMMON_ERROR.value, reply_markup=kb_skip)
 
 
-
-
-async def get_vote(message: types.Message, state=FSMContext):        
-    if message.text == kb_skip.keyboard[0][0].text:
-        vote = '-'
-    else:
-        vote = message.text
-    async with state.proxy() as data:
-        data['days'][-1]['vote'] = vote
-    await message.answer(Answer.MURDER.value, reply_markup=kb_skip)
+async def get_vote(message: types.Message, state=FSMContext):
     await FSMGame.murder.set()
+    async with state.proxy() as data:
+        if message.text == kb_skip.keyboard[0][0].text:
+            vote = '-'
+            await message.answer(Answer.MURDER.value, reply_markup=kb_skip)
+            await FSMGame.murder.set()
+        elif (has_player_in_active_players(message.text, data['days'][-1]['nomination'])):
+            vote = str_to_digit_list_int(message.text)
+            data['days'][-1]['vote'] = vote
+            await message.answer(Answer.MURDER.value, reply_markup=kb_skip)
+        else:
+            await message.answer(Answer.COMMON_ERROR.value, reply_markup=kb_skip)
+            await FSMGame.votes.set()
 
 
 async def get_murder(message: types.Message, state=FSMContext):
@@ -181,7 +180,8 @@ async def get_best_move(message: types.Message, state=FSMContext):
         data['best_move'] = best_move
     await message.answer(Answer.NOMINATIONS.value)
     await FSMGame.nomination.set()
-    
+
+
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(
         get_extra_points, state=FSMGame.extra_point)

@@ -3,3 +3,4 @@
 venv/*
 start_bot.bat
 .vscode/*
+goals.txt
